@@ -184,7 +184,7 @@ public class Sequence {
 					
 					if (indexes.get(i).multiplier > 0) {
 						if (i == 0) {
-							sgn = indexes.get(0).negative?"- ":"";
+							sgn = indexes.get(0).negative?"-":"";
 						}
 					}
 					else {
