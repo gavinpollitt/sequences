@@ -8,8 +8,10 @@ import java.util.List;
 // Working 2 6 12 20 30
 // Working -2 -2 -2 -2 -2
 // Working -11 -14 -9 10 49 114
+// Working 6 10 16 24
 public class Sequence {
 
+	private final static boolean WORKING = true;
 	public static void main(String args[]) {
 		List<Integer> sequence = new ArrayList<>();
 		if (args.length < 4) {
@@ -23,8 +25,10 @@ public class Sequence {
 		Sequence s = new Sequence();
 
 		try {
+			System.out.println("Sequence to evaluate:" + sequence);
+			System.out.println();
 			List<Index> inds = s.evaluate(sequence);
-			System.out.println("Formula:" + Index.getFormula(inds));
+			System.out.println("\n\nFull Formula:" + Index.getFormula(inds));
 			System.out.println();
 
 		} catch (Exception e) {
@@ -33,40 +37,31 @@ public class Sequence {
 
 	}
 
-	private void dump(List<Index> ind) {
-
-	}
-
 	private List<Index> evaluate(List<Integer> sequence) throws UnresolvableSequence {
-		System.out.println("Sequence:" + sequence);
-
-		Integer p = initialPass(sequence);
-		List<Index> out = fullPass(p, sequence);
-
-		System.out.println("Line: " + p);
-
+		List<Index> out = fullPass(sequence);
+		
 		return out;
 	}
 
-	private Integer initialPass(final List<Integer> sequence) throws UnresolvableSequence {
-		int i = 1;
+	private List<Index> fullPass(final List<Integer> sequence) throws UnresolvableSequence {
+		
+		working("STAGE {");
+		working("  Active Sequence-->" + sequence);
+		int max = 1;
 
 		DiffSeq ds = diffSeq(sequence);
+		working("  Pass-->" + max);
+		working("  Calculated difference Sequence -->" + ds.diffs);
 		while (ds.dt != DIFF_TYPE.COMPLETE && ds.dt != DIFF_TYPE.ZEROS) {
-			i++;
+			max++;
 			ds = diffSeq(ds.diffs);
+			working("  Pass-->" + max);
+			working("  Calculated difference Sequence -->" + ds.diffs);
 		}
-
-		return i;
-	}
-
-	private List<Index> fullPass(final Integer max, final List<Integer> sequence) throws UnresolvableSequence {
-		DiffSeq ds = diffSeq(sequence);
-		for (int ii = 1; ii < max; ii++) {
-			ds = diffSeq(ds.diffs);
-		}
-
+		
 		final Index index = new Index(ds.getDiff() / factorial(max), max);
+		working("  Calculated Multiplier at line " + max + " (" + ds.getDiff() + "/" + max + "!)-->" + (ds.getDiff() / factorial(max)));
+		working("  Calculated Power-->" + max);
 
 		List<Integer> newSeq = new ArrayList<>(sequence.size());
 		for (int i = 0; i < sequence.size(); i++) {
@@ -76,13 +71,19 @@ public class Sequence {
 		List<Index> formPart = new ArrayList<>(1);
 		formPart.add(index);
 
+		
 		if (max != 1) {
+			working("  Calculated formula part-->" + Index.getFormula(formPart));
+			working("  Calculated sequence for next Stage-->" + newSeq);
+			working("}\n");
 			formPart.addAll(evaluate(newSeq));
-		}
-
-		if (max == 1) {
+		}			
+		else {
 			Index ind = new Index(newSeq.get(0),0);
+			working("  Calculated formula part-->" + Index.getFormula(formPart));
+			working("  Final Constant-->" + Index.getFormula(ind));
 			formPart.add(ind);
+			working("}\n");
 		}
 
 		return formPart;
@@ -134,10 +135,16 @@ public class Sequence {
 		return diffs;
 	}
 
-	private static int factorial(int n) {
+	private static int factorial(final int n) {
 		if (n==1) return 1;
 		
 		return n * factorial(n-1);
+	}
+	
+	private static void working(final String out) {
+		if (WORKING) {
+			System.out.println(out);
+		}
 	}
 	
 	private static class DiffSeq {
@@ -199,6 +206,12 @@ public class Sequence {
 			return output;
 		}
 		
+		public static String getFormula(final Index index) {
+			final List<Index> indexOne = new ArrayList<>(1);
+			indexOne.add(index);
+			return getFormula(indexOne);
+		}
+
 		public String toString() {
 			if (multiplier == 0)
 				return "";
