@@ -9,6 +9,7 @@ import java.util.List;
 // Working -2 -2 -2 -2 -2
 // Working -11 -14 -9 10 49 114
 // Working 6 10 16 24
+// Try -10 -4 38 170 470 1040
 public class Sequence {
 
 	private final static boolean WORKING = true;
@@ -32,7 +33,7 @@ public class Sequence {
 			System.out.println();
 
 		} catch (Exception e) {
-			System.out.println("The numbers provided do not obey an Arithmetic Sequence");
+			System.out.println(e.getMessage());
 		}
 
 	}
@@ -91,6 +92,10 @@ public class Sequence {
 
 	private DiffSeq diffSeq(final List<Integer> sequence) throws UnresolvableSequence {
 		List<Integer> diffs = diffArray(sequence);
+		
+		if (diffs.size() == 2 && (diffs.get(0) != diffs.get(1))) {
+			throw new UnresolvableSequence("Not enough digits supplied to resolve the powers of this sequence");
+		}
 
 		// Validate
 		boolean valid = true;
