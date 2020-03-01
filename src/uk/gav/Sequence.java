@@ -17,51 +17,88 @@ import java.util.stream.Stream;
 public class Sequence {
 
 	private final static boolean WORKING = true;
+
 	public static void main(String args[]) {
 		List<Integer> sequence = new ArrayList<>();
-		if (args.length < 4) {
-			throw new IllegalArgumentException("At least 4 arguments must be supplied");
-		} else {
-			for (int i = 0; i < args.length; i++) {
-				sequence.add(Integer.parseInt(args[i]));
+		if (args.length == 0) {
+			System.out.println("No arguments supplied");
+			System.exit(1);
+		}
+		
+		boolean calcFormula = false;
+		int startIndex = 0;
+		int digitsToShow = 20;
+		
+		if (args[0].equals("S")) {
+			calcFormula = true;
+			startIndex = 1;
+		}
+		else {
+			try {
+				Integer.parseInt(args[0]);
+				calcFormula = true;
+			}
+			catch (Exception e) {
+				startIndex = 1;
 			}
 		}
-
+		
 		Sequence s = new Sequence();
-
-		try {
-			System.out.println("Sequence to evaluate:" + sequence);
-			System.out.println();
-			List<Index> inds = s.evaluate(sequence);
-			System.out.println("\n\nFull Formula:" + Index.getFormula(inds));
-			System.out.println();
-			System.out.println("First 20 digits are::" + s.calculate(inds, 20));
-
-		} catch (Exception e) {
-			System.out.println(e.getMessage());
+		List<Index> inds = null;
+		if (calcFormula) {
+			if (args.length < (startIndex > 0?5:4)) {
+				throw new IllegalArgumentException("At least sequence member arguments must be supplied");
+			} 
+			else {
+				for (int i = startIndex; i < args.length; i++) {
+					sequence.add(Integer.parseInt(args[i]));
+				}
+			}
+			
+			try {
+				System.out.println("Sequence to evaluate:" + sequence);
+				System.out.println();
+				inds = s.evaluate(sequence);
+			} catch (Exception e) {
+				System.out.println(e.getMessage());
+			}
 		}
+		else {			
+			startIndex = 2;
+			if (args.length < 3) {
+				throw new IllegalArgumentException("Arguments must at least indicate number values to print in sequence and one part of formula");
+				
+			}
+			digitsToShow = Integer.parseInt(args[1]);
+			inds = new ArrayList<>();
+			for (int i = startIndex; i < args.length; i++) {
+				inds.add(Index.parseIndex(args[i]));
+			}			
+		}
+
+		System.out.println("\n\nFull Formula:" + Index.getFormula(inds));
+		System.out.println("First " + digitsToShow + " digits are::" + s.calculate(inds, digitsToShow));
 
 }
 
 	private List<Index> evaluate(List<Integer> sequence) throws UnresolvableSequence {
 		List<Index> out = fullPass(sequence);
-		
+
 		return out;
 	}
-	
+
 	private List<String> calculate(final List<Index> comps, final int digits) {
 		final List<String> vals = new ArrayList<>(comps.size());
-		
+
 		IntStream.range(1, digits).forEach(d -> {
-			vals.add(d + "->" + comps.stream().mapToLong(c -> c.calculate(d)).reduce(0l, (a,b) -> a + b));
+			vals.add(d + "->" + comps.stream().mapToLong(c -> c.calculate(d)).reduce(0l, (a, b) -> a + b));
 		});
-		
-		
+
 		return vals;
 	}
 
 	private List<Index> fullPass(final List<Integer> sequence) throws UnresolvableSequence {
-		
+
 		working("STAGE {");
 		working("  Active Sequence-->" + sequence);
 		int max = 1;
@@ -75,28 +112,28 @@ public class Sequence {
 			working("  Pass-->" + max);
 			working("  Calculated difference Sequence -->" + ds.diffs);
 		}
-		
+
 		final Index index = new Index(ds.getDiff() / factorial(max), max);
-		working("  Calculated Multiplier at line " + max + " (" + ds.getDiff() + "/" + max + "!)-->" + (ds.getDiff() / factorial(max)));
+		working("  Calculated Multiplier at line " + max + " (" + ds.getDiff() + "/" + max + "!)-->"
+				+ (ds.getDiff() / factorial(max)));
 		working("  Calculated Power-->" + max);
 
 		List<Integer> newSeq = new ArrayList<>(sequence.size());
 		for (int i = 0; i < sequence.size(); i++) {
-			newSeq.add(sequence.get(i) - ((index.negative?-1:1)*index.multiplier * (int) Math.pow(i + 1, index.power)));
+			newSeq.add(sequence.get(i)
+					- ((index.negative ? -1 : 1) * index.multiplier * (int) Math.pow(i + 1, index.power)));
 		}
 
 		List<Index> formPart = new ArrayList<>(1);
 		formPart.add(index);
 
-		
 		if (max != 1) {
 			working("  Calculated formula part-->" + Index.getFormula(formPart));
 			working("  Calculated sequence for next Stage-->" + newSeq);
 			working("}\n");
 			formPart.addAll(evaluate(newSeq));
-		}			
-		else {
-			Index ind = new Index(newSeq.get(0),0);
+		} else {
+			Index ind = new Index(newSeq.get(0), 0);
 			working("  Calculated formula part-->" + Index.getFormula(formPart));
 			working("  Final Constant-->" + Index.getFormula(ind));
 			formPart.add(ind);
@@ -108,7 +145,7 @@ public class Sequence {
 
 	private DiffSeq diffSeq(final List<Integer> sequence) throws UnresolvableSequence {
 		List<Integer> diffs = diffArray(sequence);
-		
+
 		if (diffs.size() == 2 && (diffs.get(0) != diffs.get(1))) {
 			throw new UnresolvableSequence("Not enough digits supplied to resolve the powers of this sequence");
 		}
@@ -116,17 +153,18 @@ public class Sequence {
 		// Validate
 		boolean valid = true;
 
-//		List<Integer> diffDiffs = diffArray(diffs);
-//
-//		DIFF_TYPE lastDT = DIFF_TYPE.evaluate(diffDiffs.get(0), diffDiffs.get(1));
-//		for (int i = 1; i < diffDiffs.size() - 1 && valid; i++) {
-//			DIFF_TYPE nextDT = DIFF_TYPE.evaluate(diffDiffs.get(i), diffDiffs.get(i + 1));
-//
-//			if (nextDT != lastDT) {
-//				valid = false;
-//			}
-//		}
-	
+		// List<Integer> diffDiffs = diffArray(diffs);
+		//
+		// DIFF_TYPE lastDT = DIFF_TYPE.evaluate(diffDiffs.get(0), diffDiffs.get(1));
+		// for (int i = 1; i < diffDiffs.size() - 1 && valid; i++) {
+		// DIFF_TYPE nextDT = DIFF_TYPE.evaluate(diffDiffs.get(i), diffDiffs.get(i +
+		// 1));
+		//
+		// if (nextDT != lastDT) {
+		// valid = false;
+		// }
+		// }
+
 		DIFF_TYPE lastDT = DIFF_TYPE.evaluate(diffs.get(0), diffs.get(1));
 		for (int i = 1; i < diffs.size() - 1 && valid; i++) {
 			DIFF_TYPE nextDT = DIFF_TYPE.evaluate(diffs.get(i), diffs.get(i + 1));
@@ -157,17 +195,18 @@ public class Sequence {
 	}
 
 	private static int factorial(final int n) {
-		if (n==1) return 1;
-		
-		return n * factorial(n-1);
+		if (n == 1)
+			return 1;
+
+		return n * factorial(n - 1);
 	}
-	
+
 	private static void working(final String out) {
 		if (WORKING) {
 			System.out.println(out);
 		}
 	}
-	
+
 	private static class DiffSeq {
 		private DIFF_TYPE dt;
 		private List<Integer> diffs;
@@ -195,40 +234,67 @@ public class Sequence {
 			if (multiplier < 0) {
 				this.negative = true;
 				this.multiplier = -multiplier;
-			}
-			else {
+			} else {
 				this.multiplier = multiplier;
 			}
-			
+
 			this.power = power;
 		}
-		
+
 		public static String getFormula(final List<Index> indexes) {
 			String output = "";
 			if (indexes.size() != 0) {
-				
+
 				for (int i = 0; i < indexes.size(); i++) {
-					String sgn = indexes.get(i).negative?"- ":"+ ";
-					
+					String sgn = indexes.get(i).negative ? "- " : "+ ";
+
 					if (indexes.get(i).multiplier > 0) {
 						if (i == 0) {
-							sgn = indexes.get(0).negative?"-":"";
+							sgn = indexes.get(0).negative ? "-" : "";
 						}
-					}
-					else {
+					} else {
 						sgn = "";
 					}
-					
-					output+= sgn;
-					output+= indexes.get(i).toString();
-				}				
+
+					output += sgn;
+					output += indexes.get(i).toString();
+				}
 			}
-			
+
 			return output;
 		}
-		
+
 		public Long calculate(final int n) {
-			return Math.round(this.multiplier * Math.pow(n, this.power)) * (this.negative?-1:1);
+			return Math.round(this.multiplier * Math.pow(n, this.power)) * (this.negative ? -1 : 1);
+		}
+
+		public static Index parseIndex(final String arg) {
+			int pp = arg.indexOf('^');
+			
+			int pow = 1;
+			
+			if (pp > 0) {
+				pow = Integer.parseInt(arg.substring(pp + 1));
+			}
+			else {
+				pp = arg.length();				
+			}
+			
+			boolean con = true;
+			for (; Character.isLetter(arg.charAt(pp-1));pp--) {
+				con = false;
+			}
+			
+			pow = con?0:pow;
+			
+			int mult = 1;
+			
+			try {
+				mult = Integer.parseInt(arg.substring(0,pp));
+			}
+			catch (Exception e) {}
+			
+			return new Index(mult, pow);
 		}
 		
 		public static String getFormula(final Index index) {
@@ -243,7 +309,7 @@ public class Sequence {
 			else if (power == 0)
 				return multiplier + "";
 			else
-				return (multiplier==1?"":multiplier) + "n" + (power > 1 ? "^" + power : "") + " ";
+				return (multiplier == 1 ? "" : multiplier) + "n" + (power > 1 ? "^" + power : "") + " ";
 		}
 	}
 
