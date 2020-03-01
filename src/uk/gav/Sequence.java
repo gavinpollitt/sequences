@@ -2,6 +2,10 @@ package uk.gav;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 // Working 3 12 25 42 63
 // Working 0 6 16 30 48
@@ -31,17 +35,29 @@ public class Sequence {
 			List<Index> inds = s.evaluate(sequence);
 			System.out.println("\n\nFull Formula:" + Index.getFormula(inds));
 			System.out.println();
+			System.out.println("First 20 digits are::" + s.calculate(inds, 20));
 
 		} catch (Exception e) {
 			System.out.println(e.getMessage());
 		}
 
-	}
+}
 
 	private List<Index> evaluate(List<Integer> sequence) throws UnresolvableSequence {
 		List<Index> out = fullPass(sequence);
 		
 		return out;
+	}
+	
+	private List<String> calculate(final List<Index> comps, final int digits) {
+		final List<String> vals = new ArrayList<>(comps.size());
+		
+		IntStream.range(1, digits).forEach(d -> {
+			vals.add(d + "->" + comps.stream().mapToLong(c -> c.calculate(d)).reduce(0l, (a,b) -> a + b));
+		});
+		
+		
+		return vals;
 	}
 
 	private List<Index> fullPass(final List<Integer> sequence) throws UnresolvableSequence {
@@ -209,6 +225,10 @@ public class Sequence {
 			}
 			
 			return output;
+		}
+		
+		public Long calculate(final int n) {
+			return Math.round(this.multiplier * Math.pow(n, this.power)) * (this.negative?-1:1);
 		}
 		
 		public static String getFormula(final Index index) {
